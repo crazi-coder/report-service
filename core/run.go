@@ -106,7 +106,7 @@ func (s server) Start(ctx context.Context) error {
 	// After the connection has been established, enable the jwtAuthMiddleware
 	s.route.Use(middleware.AuthMiddleware(psql, s.logger))
 
-	v1 := s.route.Group("/v1/report")
+	v1 := s.route.Group("/api/v1/report")
 	authCtl := controller.NewReportController(ctx, s.logger, psql)
 	v := views.NewReportView(authCtl, v1, s.logger)
 	v.Register(ctx)
