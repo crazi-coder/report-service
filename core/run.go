@@ -114,8 +114,8 @@ func (s server) Start(ctx context.Context) error {
 	srv := &http.Server{
 		Addr:           addrs,
 		Handler:        s.route,
-		ReadTimeout:    1 * time.Second,
-		WriteTimeout:   1 * time.Second,
+		ReadTimeout:    5 * time.Second,
+		WriteTimeout:   5 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 	err = srv.ListenAndServe()

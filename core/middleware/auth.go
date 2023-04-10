@@ -44,6 +44,7 @@ func AuthMiddleware(conn *pgxpool.Pool, logger *logrus.Logger) func(c *gin.Conte
 			c.Abort()
 			return
 		}
+		logger.Info("The token Values", mc)
 		var userID string
 		q := `SELECT id FROM "%s"."auth_user" WHERE id=$1 AND is_active=$2`
 		sql := fmt.Sprintf(q, mc.Schema)
@@ -64,6 +65,6 @@ func AuthMiddleware(conn *pgxpool.Pool, logger *logrus.Logger) func(c *gin.Conte
 		}
 
 		c.Next() // Subsequent processing
-
+		
 	}
 }

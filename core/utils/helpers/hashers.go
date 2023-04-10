@@ -86,7 +86,6 @@ type DecodePasswordHasher struct {
 func (h *PBKDF2PasswordHasher) Salt() string {
 	l := len(RANDOM_STRING_CHARS)
 	charCount := math.Ceil(saltEntropy / math.Log2(float64(l)))
-	fmt.Println(charCount)
 	return GetRandomString(int(charCount))
 }
 
