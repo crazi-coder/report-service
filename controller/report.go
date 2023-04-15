@@ -257,7 +257,7 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 		tblCategory, goqu.On(goqu.Ex{
 			"common_category.id": goqu.I("photo_photosession.user_id"),
 		}),
-	)
+	).Order(goqu.I("photo_photosession.created_on").Desc().NullsLast())
 
 	if len(request.Store) > 0 {
 		nq = nq.Where(
