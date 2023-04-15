@@ -207,7 +207,7 @@ func (r *reportView) PhotoSession(ctx *gin.Context) {
 	visited_from := ctx.Query("visited_from")
 	visited_to := ctx.Query("visited_to")
 	pageSize := ctx.Query("page_size")
-	pageNumber := ctx.Query("page_number")
+	pageNumber := ctx.Query("page")
 
 	req := controller.Request{}
 
