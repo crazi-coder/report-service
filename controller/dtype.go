@@ -25,7 +25,7 @@ func (r *Request) StoreList(storeList string) {
 	storeStrList := strings.Split(storeList, ",")
 	for _, e := range storeStrList {
 		i, err := strconv.ParseInt(e, 10, 64)
-		if err != nil {
+		if err == nil {
 			r.Store = append(r.Store, int(i))
 		}
 	}
