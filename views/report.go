@@ -11,6 +11,7 @@ import (
 	"github.com/crazi-coder/report-service/core/utils"
 	"github.com/crazi-coder/report-service/core/utils/helpers"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v4"
 	"github.com/sirupsen/logrus"
 )
 
@@ -205,9 +206,9 @@ func (r *reportView) PhotoSession(ctx *gin.Context) {
 	categoryStr := ctx.Query("category_list")
 	photoTypeStr := ctx.Query("photo_type_list")
 	visitedFrom := ctx.Query("visited_from")
-	visitedTo := ctx.Query("visitedTo")
-	pageSize := ctx.Query("page_size")
-	pageNumber := ctx.Query("page")
+	visitedTo := ctx.Query("visited_to")
+	pageSize := ctx.DefaultQuery("page_size", "100")
+	pageNumber := ctx.DefaultQuery("page", "1")
 
 	req := controller.Request{}
 
@@ -221,9 +222,6 @@ func (r *reportView) PhotoSession(ctx *gin.Context) {
 
 	// Convert the string representation of timestamp to a date object
 	if visitedFrom != "" {
-		if len(visitedFrom) > 9 {
-			visitedFrom = visitedFrom[:9]
-		}
 		from, err := strconv.ParseInt(visitedFrom, 10, 64)
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusExpectationFailed, resp.Error(helpers.ErrCodeStatusBadRequest, "Wring from date", err))
@@ -232,9 +230,6 @@ func (r *reportView) PhotoSession(ctx *gin.Context) {
 		req.VisitedFrom = time.Unix(from, 0)
 	}
 	if visitedTo != "" {
-		if len(visitedTo) > 9 {
-			visitedTo = visitedTo[:9]
-		}
 		to, err := strconv.ParseInt(visitedTo, 10, 64)
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusExpectationFailed, resp.Error(helpers.ErrCodeStatusBadRequest, "Wring to date", err))
@@ -242,6 +237,23 @@ func (r *reportView) PhotoSession(ctx *gin.Context) {
 		}
 		req.VisitedTo = time.Unix(to, 0)
 	}
-	p, _ := r.controller.PhotoSessions(ctx.Request.Context(), rCtx.requestSchema, rCtx.requestUserID, req)
-	ctx.AbortWithStatusJSON(http.StatusOK, p)
+	p, err := r.controller.PhotoSessions(ctx.Request.Context(), rCtx.requestSchema, rCtx.requestUserID, ctx.Request.RequestURI, req)
+	switch err {
+	case nil:
+		ctx.AbortWithStatusJSON(http.StatusOK, p)
+	case pgx.ErrNoRows:
+		ctx.AbortWithStatusJSON(http.StatusNoContent,
+			resp.Error(helpers.ErrCodeDataNotFound, controller.DataNotFound, err),
+		)
+	case helpers.ErrPageLimitExceeded:
+		ctx.AbortWithStatusJSON(http.StatusBadRequest,
+			resp.Error(helpers.ErrPageLimitExceededError, controller.InvalidPageNumber, err),
+		)
+	default:
+		ctx.AbortWithStatusJSON(http.StatusExpectationFailed,
+			resp.Error(helpers.ErrCodeServerError, controller.Unrecognized, err),
+		)
+		r.logger.WithError(err).Error("Error retrieving Photo Session details")
+	}
+	return
 }

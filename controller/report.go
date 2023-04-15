@@ -23,7 +23,7 @@ type ReportController interface {
 	Category(ctx context.Context, schema string, userID int64, request Request) ([]*Category, error)
 	Users(ctx context.Context, schema string, userID int64, request Request) ([]*User, error)
 	PhotoTypes(ctx context.Context, schema string, userID int64, request Request) ([]*PhotoType, error)
-	PhotoSessions(ctx context.Context, schema string, userID int64, request Request) ([]*PhotoSession, error)
+	PhotoSessions(ctx context.Context, schema string, userID int64, url string, request Request) (*PaginatedResult, error)
 }
 
 type reportController struct {
@@ -233,12 +233,13 @@ func (r *reportController) Users(ctx context.Context, schema string, userID int6
 	return userList, nil
 }
 
-func (r *reportController) PhotoSessions(ctx context.Context, schema string, userID int64, request Request) ([]*PhotoSession, error) {
+func (r *reportController) PhotoSessions(ctx context.Context, schema string, userID int64, url string, request Request) (*PaginatedResult, error) {
 
 	tblPhotoSession := goqu.S(schema).Table("photo_photosession")
 	tblStore := goqu.S(schema).Table("store_store")
 	tblUser := goqu.S(schema).Table("auth_user")
 	tblCategory := goqu.S(schema).Table("common_category")
+	fmt.Println(request)
 	if request.PageSize == 0 {
 		request.PageSize = 100
 	}
@@ -248,11 +249,7 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 	limit := request.PageSize
 	offset := (limit * request.PageNumber) - limit
 
-	nq := r.dialect.From(tblPhotoSession).Select(
-		"photo_photosession.session_id", "photo_photosession.photo_count", "store_store.id", "store_store.title",
-		"auth_user.id", "auth_user.username", "common_category.id", "common_category.name",
-		"photo_photosession.created_on", "photo_photosession.visit_timestamp",
-	).Join(
+	nq := r.dialect.From(tblPhotoSession).Join(
 		tblStore, goqu.On(goqu.Ex{
 			"store_store.id": goqu.I("photo_photosession.store_id"),
 		}),
@@ -264,7 +261,7 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 		tblCategory, goqu.On(goqu.Ex{
 			"common_category.id": goqu.I("photo_photosession.category_id"),
 		}),
-	).Order(goqu.I("photo_photosession.created_on").Desc()).Limit(limit).Offset(offset)
+	)
 
 	if len(request.Store) > 0 {
 		nq = nq.Where(
@@ -288,19 +285,31 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 	if request.VisitedFrom.Unix() > 0 && request.VisitedTo.Unix() > 0 {
 		nq = nq.Where(
 			goqu.And(
-				goqu.C("photo_photosession.visit_timestamp").Gt(request.VisitedFrom.Format(time.RFC3339)),
-				goqu.C("photo_photosession.visit_timestamp").Lte(request.VisitedTo.Format(time.RFC3339)),
+				goqu.C("visit_timestamp").Table("photo_photosession").Schema(schema).Gt(request.VisitedFrom.Format(time.RFC3339)),
+				goqu.C("visit_timestamp").Table("photo_photosession").Schema(schema).Lte(request.VisitedTo.Format(time.RFC3339)),
 			),
 		)
 	}
+	var count uint
+	countGoQuery := nq.Select(goqu.COUNT("photo_photosession.id"))
+	countQuery, args, _ := countGoQuery.ToSQL()
+	r.logger.WithFields(logrus.Fields{"Query": countQuery, "args": args}).Debug("query for photo session")
+	err := r.conn.QueryRow(ctx, countQuery, args...).Scan(&count)
+	if err != nil {
+		return nil, err
+	}
 
-	nq = nq.Prepared(false)
+	nq = nq.Select(
+		"photo_photosession.session_id", "photo_photosession.photo_count", "store_store.id", "store_store.title",
+		"auth_user.id", "auth_user.username", "common_category.id", "common_category.title",
+		"photo_photosession.created_on", "photo_photosession.visit_timestamp",
+	).Order(goqu.I("photo_photosession.created_on").Desc()).Limit(limit).Offset(offset).Prepared(false)
 	q, args, err := nq.ToSQL()
 
 	if err != nil {
 		return nil, err
 	}
-	r.logger.WithFields(logrus.Fields{"Query": q, "args": args}).Info("query for photo session")
+	r.logger.WithFields(logrus.Fields{"Query": q, "args": args}).Debug("query for photo session")
 	res, err := r.conn.Query(ctx, q, args...)
 	if err != nil {
 		return nil, err
@@ -320,7 +329,7 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 
 		err := res.Scan(&p.ID, &p.PhotoCount, &s.ID, &s.Name, &u.ID, &u.Name, &c.ID, &c.Name, &created, &visited)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
 		p.CreatedAt = created.Format(time.RFC822)
@@ -334,7 +343,16 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 		p.Category = c
 		results = append(results, &p)
 	}
-	return results, nil
+
+	paginator := Paginator{}
+	p, err := paginator.Pagination(url, request.PageNumber, request.PageSize, count)
+	if err != nil {
+		if err != nil {
+			return nil, err
+		}
+	}
+	paginationResult := PaginatedResult{Result: results, Count: count, Paginator: *p}
+	return &paginationResult, nil
 }
 
 func (r *reportController) PhotoTypes(ctx context.Context, schema string, userID int64, request Request) ([]*PhotoType, error) {
