@@ -281,10 +281,11 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 
 	nq = nq.Prepared(true)
 	q, args, err := nq.ToSQL()
-	fmt.Println(q)
+
 	if err != nil {
 		return nil, err
 	}
+	r.logger.WithFields(logrus.Fields{"Query": q, "args": args}).Info("query for photo session")
 	res, err := r.conn.Query(ctx, q, args...)
 	if err != nil {
 		return nil, err
