@@ -206,6 +206,8 @@ func (r *reportView) PhotoSession(ctx *gin.Context) {
 	photoTypeStr := ctx.Query("photo_type_list")
 	visited_from := ctx.Query("visited_from")
 	visited_to := ctx.Query("visited_to")
+	pageSize := ctx.Query("page_size")
+	pageNumber := ctx.Query("page_number")
 
 	req := controller.Request{}
 
@@ -214,6 +216,8 @@ func (r *reportView) PhotoSession(ctx *gin.Context) {
 	req.StoreChannelList(storeChannelStr)
 	req.CategoryList(categoryStr)
 	req.PhotoTypeList(photoTypeStr)
+	req.SetPageNumber(pageNumber)
+	req.SetPageSize(pageSize)
 
 	// Convert the string representation of timestamp to a date object
 	from, _ := strconv.ParseInt(visited_from, 10, 64)

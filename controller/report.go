@@ -241,6 +241,9 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 	tblUser := goqu.S(schema).Table("auth_user")
 	tblCategory := goqu.S(schema).Table("common_category")
 
+	limit := request.PageSize
+	offset := (limit * request.PageNumber) - limit
+
 	nq := r.dialect.From(tblPhotoSession).Select(
 		"photo_photosession.session_id", "photo_photosession.photo_count", "store_store.id", "store_store.title",
 		"auth_user.id", "auth_user.username", "common_category.id", "common_category.name",
@@ -257,7 +260,7 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 		tblCategory, goqu.On(goqu.Ex{
 			"common_category.id": goqu.I("photo_photosession.user_id"),
 		}),
-	).Order(goqu.I("photo_photosession.created_on").Desc().NullsLast())
+	).Order(goqu.I("photo_photosession.created_on").Desc().NullsLast()).Limit(limit).Offset(offset)
 
 	if len(request.Store) > 0 {
 		nq = nq.Where(

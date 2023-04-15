@@ -19,6 +19,22 @@ type Request struct {
 	SessionProcessingStatus string    `json:"session_processing_status"`
 	EvidenceProgressStatus  string    `json:"evidence_progress_status"`
 	QualityProcessionStatus string    `json:"quality_processing_status"`
+	PageSize                uint     `json:"page_size"`
+	PageNumber              uint     `json:"page_number"`
+}
+
+func (r *Request) SetPageSize(pageSize string) {
+	i, err := strconv.ParseUint(pageSize, 10, 64)
+	if err == nil {
+		r.PageSize = uint(i)
+	}
+}
+
+func (r *Request) SetPageNumber(pageNumber string) {
+	i, err := strconv.ParseUint(pageNumber, 10, 64)
+	if err == nil {
+		r.PageNumber = uint(i)
+	}
 }
 
 func (r *Request) StoreList(storeList string) {
