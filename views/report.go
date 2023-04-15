@@ -204,8 +204,8 @@ func (r *reportView) PhotoSession(ctx *gin.Context) {
 	storeChannelStr := ctx.Query("store_channel_list")
 	categoryStr := ctx.Query("category_list")
 	photoTypeStr := ctx.Query("photo_type_list")
-	visited_from := ctx.Query("visited_from")
-	visited_to := ctx.Query("visited_to")
+	visitedFrom := ctx.Query("visited_from")
+	visitedTo := ctx.Query("visitedTo")
 	pageSize := ctx.Query("page_size")
 	pageNumber := ctx.Query("page")
 
@@ -220,16 +220,22 @@ func (r *reportView) PhotoSession(ctx *gin.Context) {
 	req.SetPageSize(pageSize)
 
 	// Convert the string representation of timestamp to a date object
-	if visited_from != "" {
-		from, err := strconv.ParseInt(visited_from, 10, 64)
+	if visitedFrom != "" {
+		if len(visitedFrom) > 9 {
+			visitedFrom = visitedFrom[:9]
+		}
+		from, err := strconv.ParseInt(visitedFrom, 10, 64)
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusExpectationFailed, resp.Error(helpers.ErrCodeStatusBadRequest, "Wring from date", err))
 			return
 		}
 		req.VisitedFrom = time.Unix(from, 0)
 	}
-	if visited_to != ""{
-		to, err := strconv.ParseInt(visited_to, 10, 64)
+	if visitedTo != "" {
+		if len(visitedTo) > 9 {
+			visitedTo = visitedTo[:9]
+		}
+		to, err := strconv.ParseInt(visitedTo, 10, 64)
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusExpectationFailed, resp.Error(helpers.ErrCodeStatusBadRequest, "Wring to date", err))
 			return
