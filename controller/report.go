@@ -280,7 +280,7 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 			goqu.Ex{"category_id": request.Category},
 		)
 	}
-	if !(request.VisitedFrom.IsZero() && request.VisitedTo.IsZero()) {
+	if (request.VisitedFrom.Unix() > 0 && request.VisitedTo.Unix() > 0 ) {
 		nq = nq.Where(
 				goqu.And(
 					goqu.C("visit_timestamp").Gt(request.VisitedFrom.Unix()),
