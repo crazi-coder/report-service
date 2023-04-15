@@ -90,11 +90,11 @@ func (s server) Start(ctx context.Context) error {
 
 	psqlPort, _ := strconv.Atoi(helpers.GetEnv("POSTGRES_PORT", "5432"))
 	psqlConf := libs.PgConfig{
-		Host:     helpers.GetEnv("PROD_INFIVIZ_DB_SERVER_IP", "34.124.157.33"),
+		Host:     helpers.GetEnv("PROD_INFIVIZ_DB_SERVER_IP", "35.185.187.195"),
 		Port:     psqlPort,
-		Database: helpers.GetEnv("PROD_INFIVIZ_DB_NAME", "infiviz_dev_db"),
-		User:     helpers.GetEnv("PROD_INFIVIZ_DB_USERNAME", "postgres"),
-		Password: helpers.GetEnv("PROD_INFIVIZ_DB_PASSWORD", "postgres"),
+		Database: helpers.GetEnv("PROD_INFIVIZ_DB_NAME", "infiviz_db_01"),
+		User:     helpers.GetEnv("PROD_INFIVIZ_DB_USERNAME", "backend_read_user"),
+		Password: helpers.GetEnv("PROD_INFIVIZ_DB_PASSWORD", "S6mGtxpNF5eM+OWzZGoej5k+Blot0gdgbY/YPXTG"),
 	}
 	psql, err := libs.NewPostgreSQLConnection(ctx, s.logger, 1, 10, &psqlConf)
 	if err != nil {

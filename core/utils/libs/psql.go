@@ -31,13 +31,17 @@ func NewPostgreSQLConnection(ctx context.Context, logger *logrus.Logger, minPool
 
 	dsn := fmt.Sprintf(
 		//"postgresql://%s:%s@%s:%d/%s?statement_cache_mode=describe&sslmode=disable",
-		"postgresql://%s:%s@%s:%d/%s?sslmode=disable",
+		//"postgresql://%s:%s@%s:%d/%s",
+		"user=%s password=%s host=%s port=%d dbname=%s",
 		conf.User, conf.Password, conf.Host, conf.Port, conf.Database,
 	)
-
+	fmt.Println(dsn)
 	ctx, cancel := context.WithTimeout(ctx, DatabaseConnectionTimeOut)
 	defer cancel()
-	connConfig, _ := pgxpool.ParseConfig(dsn)
+	connConfig, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		
+	}
 	if maxPoolSize == 0 {
 		maxPoolSize = 1 // Default pool size is set to 1
 	}
