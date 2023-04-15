@@ -113,7 +113,6 @@ func (r *reportController) Store(ctx context.Context, schema string, userID int6
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(q)
 	res, err := r.conn.Query(ctx, q, args...)
 	if err != nil {
 		return nil, err
@@ -279,6 +278,13 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 	if len(request.Category) > 0 {
 		nq = nq.Where(
 			goqu.Ex{"category_id": request.Category},
+		)
+	}
+	if !(request.VisitedFrom.IsZero() || request.VisitedTo.IsZero()) {
+		nq = nq.Where(
+			goqu.Ex{
+				"visit_timestamp": goqu.Op{"gt": request.VisitedFrom.Unix(), "lt": request.VisitedFrom.Unix()},
+			},
 		)
 	}
 
