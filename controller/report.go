@@ -268,7 +268,7 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 
 	if len(request.Store) > 0 {
 		nq = nq.Where(
-			goqu.Ex{"store_id": request.Store},
+			goqu.Ex{"photo_photosession.store_id": request.Store},
 		)
 	} else if len(request.StoreBrand) > 0 && len(request.StoreChannel) > 0 {
 		// TODO: Logic to get the store id and assign to store
@@ -276,20 +276,20 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 
 	if len(request.PhotoType) > 0 {
 		nq = nq.Where(
-			goqu.Ex{"photo_type_id": request.PhotoType},
+			goqu.Ex{"photo_photosession.photo_type_id": request.PhotoType},
 		)
 	}
 
 	if len(request.Category) > 0 {
 		nq = nq.Where(
-			goqu.Ex{"category_id": request.Category},
+			goqu.Ex{"photo_photosession.category_id": request.Category},
 		)
 	}
 	if request.VisitedFrom.Unix() > 0 && request.VisitedTo.Unix() > 0 {
 		nq = nq.Where(
 			goqu.And(
-				goqu.C("visit_timestamp").Gt(request.VisitedFrom.Format(time.RFC3339)),
-				goqu.C("visit_timestamp").Lte(request.VisitedTo.Format(time.RFC3339)),
+				goqu.C("photo_photosession.visit_timestamp").Gt(request.VisitedFrom.Format(time.RFC3339)),
+				goqu.C("photo_photosession.visit_timestamp").Lte(request.VisitedTo.Format(time.RFC3339)),
 			),
 		)
 	}
