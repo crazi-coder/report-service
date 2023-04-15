@@ -252,17 +252,17 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 		"photo_photosession.session_id", "photo_photosession.photo_count", "store_store.id", "store_store.title",
 		"auth_user.id", "auth_user.username", "common_category.id", "common_category.name",
 		"photo_photosession.created_on", "photo_photosession.visit_timestamp",
-	).LeftJoin(
+	).Join(
 		tblStore, goqu.On(goqu.Ex{
 			"store_store.id": goqu.I("photo_photosession.store_id"),
 		}),
-	).LeftJoin(
+	).Join(
 		tblUser, goqu.On(goqu.Ex{
 			"auth_user.id": goqu.I("photo_photosession.user_id"),
 		}),
-	).RightJoin( // TODO: Change to Left Join for multi-category use case
+	).Join( // TODO: Change to Left Join for multi-category use case
 		tblCategory, goqu.On(goqu.Ex{
-			"common_category.id": goqu.I("photo_photosession.user_id"),
+			"common_category.id": goqu.I("photo_photosession.category_id"),
 		}),
 	).Order(goqu.I("photo_photosession.created_on").Desc().NullsLast()).Limit(limit).Offset(offset)
 
