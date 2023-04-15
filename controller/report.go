@@ -97,14 +97,13 @@ func (r *reportController) Store(ctx context.Context, schema string, userID int6
 		goqu.Ex{
 			"is_active": true,
 		},
-	)
+	).Limit(500)
 	if len(request.StoreBrand) > 0 {
 		nq = nq.Where(
 			goqu.Ex{"store_brand_id": request.StoreBrand},
 		)
 	}
 	if len(request.StoreChannel) > 0 {
-		fmt.Println("........", request.StoreChannel)
 		nq = nq.Where(
 			goqu.Ex{"store_type_id": request.StoreChannel},
 		)
@@ -132,9 +131,22 @@ func (r *reportController) Store(ctx context.Context, schema string, userID int6
 }
 
 func (r *reportController) StoreBrand(ctx context.Context, schema string, userID int64, request Request) ([]*StoreBrand, error) {
-	tblStore := goqu.S(schema).Table("store_storebrand")
-	nq := r.dialect.From(tblStore).Select("id", "title").Where(goqu.Ex{"is_active": true}).Limit(30)
+	tblStore := goqu.S(schema).Table("store_store")
+	tblStoreBrand := goqu.S(schema).Table("store_storebrand")
+	nq := r.dialect.From(tblStore).Select("store_storebrand.id", "store_storebrand.title").Distinct().InnerJoin(
+		tblStoreBrand, goqu.On(goqu.Ex{
+			"store_storebrand.id": goqu.I("store_store.store_brand_id"),
+		}),
+	).Where(goqu.Ex{"store_storebrand.is_active": true, "store_store.is_active": true})
+
+	if len(request.StoreChannel) > 0 {
+		nq = nq.Where(
+			goqu.Ex{"store_store.store_type_id": request.StoreChannel},
+		)
+	}
+	nq = nq.Prepared(true)
 	q, args, err := nq.ToSQL()
+	fmt.Println(q)
 	if err != nil {
 		return nil, err
 	}
@@ -154,8 +166,13 @@ func (r *reportController) StoreBrand(ctx context.Context, schema string, userID
 }
 
 func (r *reportController) StoreChannel(ctx context.Context, schema string, userID int64, request Request) ([]*StoreChannel, error) {
-	tblStore := goqu.S(schema).Table("store_storetype")
-	nq := r.dialect.From(tblStore).Select("id", "title").Where(goqu.Ex{"is_active": true}).Limit(30)
+	tblStore := goqu.S(schema).Table("store_store")
+	tblStoreChannel := goqu.S(schema).Table("store_storetype")
+	nq := r.dialect.From(tblStore).Select("store_storetype.id", "store_store.title").Distinct().InnerJoin(
+		tblStoreChannel, goqu.On(goqu.Ex{
+			"store_storetype.id": goqu.I("store_store.store_type_id"),
+		}),
+	).Where(goqu.Ex{"store_storetype.is_active": true, "store_store.is_active": true}).Prepared(true)
 	q, args, err := nq.ToSQL()
 	if err != nil {
 		return nil, err
@@ -240,9 +257,31 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 		tblCategory, goqu.On(goqu.Ex{
 			"common_category.id": goqu.I("photo_photosession.user_id"),
 		}),
-	).Limit(100).Prepared(true)
+	)
 
+	if len(request.Store) > 0 {
+		nq = nq.Where(
+			goqu.Ex{"store_id": request.Store},
+		)
+	} else if len(request.StoreBrand) > 0 && len(request.StoreChannel) > 0 {
+		// TODO: Logic to get the store id and assign to store
+	}
+
+	if len(request.PhotoType) > 0 {
+		nq = nq.Where(
+			goqu.Ex{"photo_type_id": request.PhotoType},
+		)
+	}
+
+	if len(request.Category) > 0 {
+		nq = nq.Where(
+			goqu.Ex{"category_id": request.Category},
+		)
+	}
+
+	nq = nq.Prepared(true)
 	q, args, err := nq.ToSQL()
+	fmt.Println(q)
 	if err != nil {
 		return nil, err
 	}

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/crazi-coder/report-service/controller"
 	"github.com/crazi-coder/report-service/core/utils"
@@ -133,6 +134,7 @@ func (r *reportView) Store(ctx *gin.Context) {
 	if len(storeBrandList) > 0 || len(storeChannelList) > 0 {
 		s, _ := r.controller.Store(ctx.Request.Context(), rCtx.requestSchema, rCtx.requestUserID, req)
 		ctx.AbortWithStatusJSON(http.StatusOK, s)
+		return
 	}
 	ctx.AbortWithStatusJSON(http.StatusNoContent, "")
 }
@@ -145,19 +147,19 @@ func (r *reportView) StoreBrand(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusExpectationFailed, resp.Error(helpers.ErrCodeServerError, "Unknown User", err))
 		return
 	}
-	storeBrandStr := ctx.Query("store_brand_list")
-	storeBrandStrList := strings.Split(storeBrandStr, ",")
-	if len(storeBrandStrList) < 1 {
+	storeChannelStr := ctx.Query("store_channel_list")
+	storeChannelStrList := strings.Split(storeChannelStr, ",")
+	if len(storeChannelStrList) == 0 {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, resp.Error(helpers.ErrCodeServerError, "Expected to pass store chanel", err))
 		return
 	}
-	var storeBrandList []int
 	req := controller.Request{}
-	for x := range storeBrandStrList {
-		i, _ := strconv.ParseInt(storeBrandStrList[x], 10, 64)
-		storeBrandList = append(storeBrandList, int(i))
+	for _, e := range storeChannelStrList {
+		i, err := strconv.ParseInt(e, 10, 64)
+		if err == nil {
+			req.StoreChannel = append(req.StoreChannel, int(i))
+		}
 	}
-	req.StoreBrand = storeBrandList
 	s, _ := r.controller.StoreBrand(ctx.Request.Context(), rCtx.requestSchema, rCtx.requestUserID, req)
 	ctx.AbortWithStatusJSON(http.StatusOK, s)
 }
@@ -196,6 +198,29 @@ func (r *reportView) PhotoSession(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusExpectationFailed, resp.Error(helpers.ErrCodeServerError, "Unknown User", err))
 		return
 	}
-	p, _ := r.controller.PhotoSessions(ctx.Request.Context(), rCtx.requestSchema, rCtx.requestUserID, controller.Request{})
+
+	storeStr := ctx.Query("store_list")
+	storeBrandStr := ctx.Query("store_brand_list")
+	storeChannelStr := ctx.Query("store_channel_list")
+	categoryStr := ctx.Query("category_list")
+	photoTypeStr := ctx.Query("photo_type_list")
+	visited_from := ctx.Query("visited_from")
+	visited_to := ctx.Query("visited_to")
+
+	req := controller.Request{}
+
+	req.StoreList(storeStr)
+	req.StoreBrandList(storeBrandStr)
+	req.StoreChannelList(storeChannelStr)
+	req.CategoryList(categoryStr)
+	req.PhotoTypeList(photoTypeStr)
+
+	// Convert the string representation of timestamp to a date object
+	from, _ := strconv.ParseInt(visited_from, 10, 64)
+	req.VisitedFrom = time.Unix(from, 0)
+	to, _ := strconv.ParseInt(visited_to, 10, 64)
+	req.VisitedTo = time.Unix(to, 0)
+
+	p, _ := r.controller.PhotoSessions(ctx.Request.Context(), rCtx.requestSchema, rCtx.requestUserID, req)
 	ctx.AbortWithStatusJSON(http.StatusOK, p)
 }
