@@ -17,5 +17,5 @@ jobs:
     - name: Build the Docker image
       run: |
         docker build . --file Dockerfile --tag report-service:${{github.run_number}};
-        docker image tag report-service:${{github.run_number}}  registry.crazedencoder.com/${{github.run_number}}/report-service:${{github.run_number}} ;
+        docker image tag report-service:${{github.run_number}}  registry.crazedencoder.com/report-service/report-service:${{github.run_number}} ;
         docker image push registry.crazedencoder.com/${{github.run_number}}/report-service:${{github.run_number}};
