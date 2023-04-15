@@ -239,7 +239,12 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 	tblStore := goqu.S(schema).Table("store_store")
 	tblUser := goqu.S(schema).Table("auth_user")
 	tblCategory := goqu.S(schema).Table("common_category")
-
+	if request.PageSize == 0 {
+		request.PageSize = 100
+	}
+	if request.PageNumber <= 0 {
+		request.PageNumber = 1
+	}
 	limit := request.PageSize
 	offset := (limit * request.PageNumber) - limit
 
@@ -280,16 +285,16 @@ func (r *reportController) PhotoSessions(ctx context.Context, schema string, use
 			goqu.Ex{"category_id": request.Category},
 		)
 	}
-	if (request.VisitedFrom.Unix() > 0 && request.VisitedTo.Unix() > 0 ) {
+	if request.VisitedFrom.Unix() > 0 && request.VisitedTo.Unix() > 0 {
 		nq = nq.Where(
-				goqu.And(
-					goqu.C("visit_timestamp").Gt(request.VisitedFrom.Unix()),
-					goqu.C("visit_timestamp").Lte(request.VisitedTo.Unix()),
-				),
+			goqu.And(
+				goqu.C("visit_timestamp").Gt(request.VisitedFrom.Format(time.RFC3339)),
+				goqu.C("visit_timestamp").Lte(request.VisitedTo.Format(time.RFC3339)),
+			),
 		)
 	}
 
-	nq = nq.Prepared(true)
+	nq = nq.Prepared(false)
 	q, args, err := nq.ToSQL()
 
 	if err != nil {
