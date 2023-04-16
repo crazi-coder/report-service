@@ -222,20 +222,20 @@ func (r *reportView) PhotoSession(ctx *gin.Context) {
 
 	// Convert the string representation of timestamp to a date object
 	if visitedFrom != "" {
-		from, err := strconv.ParseInt(visitedFrom, 10, 64)
+		From, err := time.Parse(time.RFC3339, visitedFrom)
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusExpectationFailed, resp.Error(helpers.ErrCodeStatusBadRequest, "Wring from date", err))
 			return
 		}
-		req.VisitedFrom = time.Unix(from, 0)
+		req.VisitedFrom = From.UTC()
 	}
 	if visitedTo != "" {
-		to, err := strconv.ParseInt(visitedTo, 10, 64)
+		To, err := time.Parse(time.RFC3339, visitedTo)
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusExpectationFailed, resp.Error(helpers.ErrCodeStatusBadRequest, "Wring to date", err))
 			return
 		}
-		req.VisitedTo = time.Unix(to, 0)
+		req.VisitedTo = To.UTC()
 	}
 	p, err := r.controller.PhotoSessions(ctx.Request.Context(), rCtx.requestSchema, rCtx.requestUserID, ctx.Request.RequestURI, req)
 	switch err {
